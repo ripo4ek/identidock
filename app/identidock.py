@@ -1,7 +1,9 @@
 from flask import Flask, Response, request
 import requests
 import hashlib
+import html # реализуем защиту от XSS
 import redis
+
 
 app = Flask(__name__)
 cache = redis.StrictRedis(host='redis', port=6379, db=0)
@@ -14,7 +16,7 @@ def mainpage():
 
     name = default_name
     if request.method == 'POST':
-        name = request.form['name']
+        name = html.escape( request.form['name'], quote=True )
 
     salted_name = salt + name
     name_hash = hashlib.sha256(salted_name.encode()).hexdigest()
@@ -33,7 +35,7 @@ def mainpage():
 
 @app.route('/monster/<name>')
 def get_identicon(name):
-
+    name = html.escape(name, quote=True) # реализуем защиту от XSS
     image = cache.get(name)
     if image is None:
         print ("Cache miss", flush=True)
